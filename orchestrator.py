@@ -71,22 +71,50 @@ async def main():
     
     # Arguments for subfinder to output silent raw JSON data lines
 
-
     subfinder_args = ["-d", target_domain, "-silent", "-json"]
     
-    print(f"\n--- Starting Passive Recon on {target_domain} ---")
+    print(f"\n---[1/2] Starting Passive Recon on {target_domain} ---")
     async for output_line in orchestrator.execute_tool("subfinder", subfinder_args):
         try:
-            # Parse the incoming JSON line
-
             data = json.loads(output_line)
-            print(f"[Subdomain Found] Host: {data.get('host')} | IP: {data.get('ip')}")
+            host = data.get('host')
+            if host:
+                discovered_subdomains.append(host)
+                print(f"[Subfinder] Discovered: {host}")
         except json.JSONDecodeError:
-            # Fallback if text format slips through
+            pass
+        # halt if nothing was found 
 
+        if not discovered_subdomains:
+            print("[-] No Subdomains found. Halting pipeline.")
+            return
+        
+        # save to a temporary file for katana to read 
 
-            print(f"[Raw Output]: {output_line}")
+        target_file = "temp_subdomains.txt"
+        with open(target_file, "w") as f:
+            for sub in discovered_subdomains:
+                f.write(f"{sub}\n")
+
+        print(f"\n--- [2/2] Saved {len(discovered_subdomains)} hosts. Launching Katana ---")
+
+        # 4. Run Katana using the subdomains file
+            # -jc crawls javascript files for hidden API endpoints
+
+        katana_args = ["-list", target_file, "-jc", "-jsonly"]
+
+        async for output_line in orchestrator.execute_tool("katana", katana_args):
+            try:
+                data = json.loads(output_line)
+
+                endpoint = data.get('request', {}).get('endpoint') or data.get('url', 'Unknown URL')
+                print(f"[Katana] Crawled Endpoint:{endpoint}")
+            except json.JSONDecodeError:
+                pass
 
 if __name__ == "__main__":
-
     asyncio.run(main())
+    
+                
+
+           
