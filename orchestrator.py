@@ -56,5 +56,38 @@ class ScanOrchestrator:
 
             yield line.decode('utf-8').strip()
 
-            
+
+            await process.wait()
+            print(f"[+] Component '{tool_name}' finished execution.")
+
+            # Example Usage:
+
+            async def main():
+                orchestrator = ScanOrchestrator()
+
+                #Test target 
+
+                target_domain = "example.com"
+
+
+
+                # Arguments for subfinder to output silent raw JSON data lines
+            subfinder_args = ["-d", target_domain, "-silent", "-json"]
+
+
+            print(f"\n--- Starting Passive Recon on {target_domain} ---")
+            async for output_line in orchestrator.execute_tool("subfinder", subfinder_args):
+                try: 
+                    # Parse the incoming JSON line
+                    data = json.loads(output_line)
+                    print(f"[Subdomain Found] Host: {data.get('host')} | IP: {data.get('ip')}")
+
+                except json.JSONDecodeError:
+
+                    print(f"[Raw Output]: {output_line}")
+
+                    __name__ == "__main__":
+                    asyncio.run(main())
+
+
 
