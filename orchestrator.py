@@ -2,6 +2,8 @@ import asyncio
 import json
 import shutil
 import sys
+from database import DatabaseManager
+
 
 class ScanOrchestrator:
     def __init__(self):
@@ -123,8 +125,13 @@ async def main():
     print(f"\n--- [3/3] Phase 2 Complete. Saved {len(unique_endpoints)} clean endpoints to {output_file} ---")
 
 
-    # NUCLEI SCANNING ENGINE
+    # NUCLEI SCANNING ENGINE and DB
     print(f"\n--- Starting Vulnerability Scan with nuclei ---")
+
+    # Initialize DB  and start scan session 
+
+    db= DatabaseManager()
+    scan_id = db.start_scan(target_domain)
 
     nuclei_args = [
         "-list", output_file,
@@ -133,22 +140,30 @@ async def main():
         "-jsonl"
     ]
 
+    vuln_count = 0
     async for outputline in orchestrator.execute_tool("nuclei", nuclei_args):
         try:
             vuln_data = json.loads(outputline)
 
-            # Extract critical details from Nuclei's structured JSON output
-            vuln_id = vuln_data.get("template-id")
-            vuln_name = vuln_data.get("info", {}).get("name")
-            severity = vuln_data.get("info", {}).get("severity", "UNKNOWN").upper()
-            matched_url = vuln_data.get("matched-at") or vuln_data.get("matched_at")
+            # Extract details
+            vuln_id = vuln_data.get("template-id", "unknown")
+            vuln_name = vuln_data.get("info", {}).get("name", "Unknown Vulnerability")
+            severity = vuln_data.get("info", {}).get("severity", "info").upper()
+            matched_url = vuln_data.get("matched-at", "unknown url")
 
-            print(f"[{severity}] Vuln Found: {vuln_name} -> {matched_url}")
+            # save at sqlite db 
+            db.save_vulnerability(scan_id, vuln_id, vuln_name, severity, matched_url)
+            vuln_count += 1
 
+            print(f"[{severity}] Saved to DB: {vuln_name} -> {matched_url}")
         except json.JSONDecodeError:
             pass
 
-    print("[+] Full pipeline execution finished successfully.")
 
+        # Mark scan as finished in the DB
+        db.complete_scan(scan_id)
+
+    print(f"\n[+] Full pipeline finished! Saved {vuln_count} findings to scanner.db.")
 if __name__ == "__main__":
     asyncio.run(main())
+
