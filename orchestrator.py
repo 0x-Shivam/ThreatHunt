@@ -123,35 +123,32 @@ async def main():
     print(f"\n--- [3/3] Phase 2 Complete. Saved {len(unique_endpoints)} clean endpoints to {output_file} ---")
 
 
-   # NUCLEI SCANNING ENGINE
+    # NUCLEI SCANNING ENGINE
+    print(f"\n--- Starting Vulnerability Scan with nuclei ---")
 
-   print(f"/n--- Starting Vulnerability Scan with nuclei ---")
-
-
-nuclei_args = [
-    "-list", output_file,
-    "-tags", "tech,exposure,misconfig",
-    "-silent",
-    "-jsonl"
-]
+    nuclei_args = [
+        "-list", output_file,
+        "-tags", "tech,exposure,misconfig",
+        "-silent",
+        "-jsonl"
+    ]
 
     async for outputline in orchestrator.execute_tool("nuclei", nuclei_args):
-    try:
-        vuln_data = json.loads(outputline)
+        try:
+            vuln_data = json.loads(outputline)
 
-        # Extract critical details from Nuclei's structured JSON output
+            # Extract critical details from Nuclei's structured JSON output
+            vuln_id = vuln_data.get("template-id")
+            vuln_name = vuln_data.get("info", {}).get("name")
+            severity = vuln_data.get("info", {}).get("severity", "UNKNOWN").upper()
+            matched_url = vuln_data.get("matched-at") or vuln_data.get("matched_at")
 
-        vuln_id = vuln_data.get("template-id")
-        vuln_name = vuln_data.get("info", {}).get("name")
-        severity = vuln_data.get("info, {}").get("severity").upper()
-        matched_url = vuln_data.get("matched-at")
+            print(f"[{severity}] Vuln Found: {vuln_name} -> {matched_url}")
 
-        print(f"[{severity}] Vuln Found: {vuln_name} -> {matched_url}")
+        except json.JSONDecodeError:
+            pass
 
-    except json.JSONDecodeError:
-        pass
-
-    print("n\[+] Full pipeline execution finished successfully.")
+    print("[+] Full pipeline execution finished successfully.")
 
 if __name__ == "__main__":
     asyncio.run(main())
