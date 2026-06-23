@@ -87,7 +87,16 @@ async def main():
     print(f"\n--- [2/3] Saved {len(discovered_subdomains)} hosts. Launching Filtered Katana ---")
 
     # 2. Run Katana with filters
-    katana_args = ["-list", target_file, "-jc", "-jsonl"]
+    katana_args = [
+        "-list", target_file, 
+        "-jc",
+        "-d", "2",
+        "-fs", "rdn",
+        "-ef", "css,png,jpg,jpeg,svg,gif,woff,woff2,ico,pdf,zip",
+        "-c", "50",
+        "-jsonl"
+    ]
+        
     
     # Use sets to keep tracking unique endpoints and avoid duplicates in memory
     unique_endpoints = set()
