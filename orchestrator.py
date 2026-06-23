@@ -59,7 +59,7 @@ class ScanOrchestrator:
 
 async def main():
     orchestrator = ScanOrchestrator()
-    target_domain = "example.com"  
+    target_domain = "vtiger.com"  
     
     # 1. Run Subfinder
     subfinder_args = ["-d", target_domain, "-silent", "-json"]
