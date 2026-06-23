@@ -74,5 +74,7 @@ class DatabaseManager:
         """Marks the scan as completed."""
 
         self.cursor.execute("UPDATE Scans SET status = 'COMPLETED' WHERE id = ?", (scan_id,))
-        
+
         self.conn.commit()
+
+        
