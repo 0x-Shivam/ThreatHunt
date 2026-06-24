@@ -19,14 +19,13 @@
             }
         }
     </script>
-    </head>
+</head>
+<body class="bg-dark text-slate-300 font-sans min-h-screen p-6">
 
-    <body class="bg-dark text-slate-300 font-sans min-h-screen p-6">
-
-        <div class="max-w-7xl mx-auto">
-
-            <!-- Header -->
-            <header class="mb-10 border-b border-slate-700 pb-5 flex justify-between items-center">
+    <div class="max-w-7xl mx-auto">
+        
+        <!-- Header -->
+        <header class="mb-10 border-b border-slate-700 pb-5 flex justify-between items-center">
             <div>
                 <h1 class="text-3xl font-bold text-white tracking-tight">Vulnerability Dashboard</h1>
                 <p class="text-slate-400 mt-1">Real-time threat analysis and attack surface monitoring.</p>
@@ -36,34 +35,45 @@
             </div>
         </header>
 
+        <!-- NEW: Target Input Form -->
+        <div class="bg-card border border-slate-700 p-6 rounded-xl shadow-lg mb-10">
+            <form action="/scan" method="POST" class="flex gap-4">
+                <input type="text" name="target" placeholder="Enter target domain (e.g., example.com)" 
+                       class="flex-1 bg-dark border border-slate-600 rounded-lg px-5 py-4 text-white focus:outline-none focus:border-blue-500 shadow-inner" required>
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded-lg transition-colors shadow-lg shadow-blue-500/20">
+                    Launch Scan
+                </button>
+            </form>
+        </div>
+
+        <!-- Stats Row -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
+            <!-- Critical Card -->
             <div class="bg-card border border-red-500/30 p-5 rounded-xl shadow-lg relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-16 h-16 bg-red-500/10 rounded-bl-full"></div>
                 <p class="text-red-400 text-sm font-bold uppercase tracking-wider mb-1">Critical</p>
                 <p class="text-4xl font-extrabold text-white">{{ stats['CRITICAL'] }}</p>
             </div>
-                <!-- High Card -->
-            <div class="bg-card border border-orange-500/3 p-5 rounded-xl shadow-lg relative overflow-hidden">
+            
+            <!-- High Card -->
+            <div class="bg-card border border-orange-500/30 p-5 rounded-xl shadow-lg relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-16 h-16 bg-orange-500/10 rounded-bl-full"></div>
                 <p class="text-orange-400 text-sm font-bold uppercase tracking-wider mb-1">High</p>
-
                 <p class="text-4xl font-extrabold text-white">{{ stats['HIGH'] }}</p>
             </div>
 
-                <!-- Medium Card -->
+            <!-- Medium Card -->
             <div class="bg-card border border-yellow-500/30 p-5 rounded-xl shadow-lg relative overflow-hidden">
                 <p class="text-yellow-400 text-sm font-bold uppercase tracking-wider mb-1">Medium</p>
                 <p class="text-4xl font-extrabold text-white">{{ stats['MEDIUM'] }}</p>
             </div>
-
-
 
             <!-- Low Card -->
             <div class="bg-card border border-blue-500/30 p-5 rounded-xl shadow-lg relative overflow-hidden">
                 <p class="text-blue-400 text-sm font-bold uppercase tracking-wider mb-1">Low</p>
                 <p class="text-4xl font-extrabold text-white">{{ stats['LOW'] }}</p>
             </div>
-
 
             <!-- Info Card -->
             <div class="bg-card border border-slate-600 p-5 rounded-xl shadow-lg relative overflow-hidden">
@@ -72,54 +82,59 @@
             </div>
         </div>
 
-
-        <!-- Vulnerabilities  Table -->
-
+        <!-- Vulnerabilities Data Table -->
         <div class="bg-card rounded-xl shadow-2xl border border-slate-700 overflow-hidden">
             <div class="p-6 border-b border-slate-700 flex justify-between items-center">
                 <h2 class="text-xl font-bold text-white">Discovered Endpoints & Exposures</h2>
                 <span class="text-sm text-slate-400">Total Findings: {{ vulns|length }}</span>
             </div>
-
+            
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-800/50 text-slate-400 text-sm uppercase tracking-wider">
                             <th class="px-6 py-4 font-semibold">Severity</th>
-
-                            <th class="px-6 py-4 font-semibold">Test2</th>
-
-                            <th class="px-6 py-4 font-semibold">Test3
-                            </th>
-
-                            <th class="px-6 py-4 font-semibold">test4</th>
-
-                            <th class="px-6 py-4 font-semibold">Test5</th>
+                            <th class="px-6 py-4 font-semibold">Vulnerability / Template</th>
+                            <th class="px-6 py-4 font-semibold">Target URL</th>
+                            <th class="px-6 py-4 font-semibold">Target Root</th>
+                            <th class="px-6 py-4 font-semibold">Date Found</th>
                         </tr>
-
                     </thead>
-                    
-                <tbody>
-
-                </tbody>
-
-
-
+                    <tbody class="divide-y divide-slate-700/50">
+                        {% for vuln in vulns %}
+                        <tr class="hover:bg-slate-700/30 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if vuln['severity'] == 'CRITICAL' %}
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-500 border border-red-500/30">CRITICAL</span>
+                                {% elif vuln['severity'] == 'HIGH' %}
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-500 border border-orange-500/30">HIGH</span>
+                                {% elif vuln['severity'] == 'MEDIUM' %}
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-500 border border-yellow-500/30">MEDIUM</span>
+                                {% elif vuln['severity'] == 'LOW' %}
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-500 border border-blue-500/30">LOW</span>
+                                {% else %}
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-500/30">INFO</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 font-medium text-white">{{ vuln['name'] }}</td>
+                            <td class="px-6 py-4 text-sm font-mono text-cyan-400 break-all">
+                                <a href="{{ vuln['url'] }}" target="_blank" class="hover:underline">{{ vuln['url'] }}</a>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-400">{{ vuln['domain'] }}</td>
+                            <td class="px-6 py-4 text-sm text-slate-500">{{ vuln['discovered_at'].split('.')[0] }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-slate-500 italic">
+                                No vulnerabilities found in the database. Run the scanner!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
                 </table>
-
-
-
-        
-
-
-
-
-
-
+            </div>
         </div>
-        
-    
 
-    
-    
-    </body>
+    </div>
+</body>
+</html>

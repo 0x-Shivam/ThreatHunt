@@ -13,7 +13,6 @@ class ScanOrchestrator:
             "katana": shutil.which("katana"),
             "nuclei": shutil.which("nuclei")
         }
-
         self.validate_environment()
 
     def validate_environment(self):
@@ -22,7 +21,6 @@ class ScanOrchestrator:
         if missing:
             print(f"[-] Critical Error: Missing binaries in PATH: {', '.join(missing)}")
             print("[*] Please ensure they are installed and globally accessible.")
-
             sys.exit(1)
         print("[+] Environment check passed. All binaries found.")
 
@@ -35,9 +33,8 @@ class ScanOrchestrator:
         command = [binary_path] + arguments
         
         print(f"[*] Launching: {' '.join(command)}")
-
         
-        # Increase the limit 25MB (25 * 1024 * 1024) to handle giant target outputs
+        # Increase the limit to 25MB (25 * 1024 * 1024) to handle giant target outputs
         LARGE_LIMIT = 25 * 1024 * 1024
         
         process = await asyncio.create_subprocess_exec(
@@ -59,13 +56,22 @@ class ScanOrchestrator:
 
 async def main():
     orchestrator = ScanOrchestrator()
-    target_domain = "vtiger.com"  
     
+    if len(sys.argv) < 2:
+        print("[-] Usage: python " 
+              
+        "orchestrator.py <domain>")
+        sys.exit(1)
+        
+    target_domain = sys.argv[1]  
     
+  
     # [1/4] SUBFINDER: Find raw DNS subdomains
+
     
     print(f"\n--- [1/4] Starting Passive Recon on {target_domain} ---")
-    subfinder_args = ["-d", target_domain, "-silent", "-json"]
+    subfinder_args = ["-d", 
+                      target_domain, "-silent", "-json"]
     raw_subdomains = []
     
     async for output_line in orchestrator.execute_tool("subfinder", subfinder_args):
@@ -88,13 +94,14 @@ async def main():
             
     print(f"\n--- Saved {len(raw_subdomains)} raw hosts. ---")
 
-    
+  
     # [2/4] HTTPX: The Speed Optimizer (Filter out dead hosts)
     
     print(f"\n--- [2/4] Filtering {len(raw_subdomains)} domains for ALIVE web servers ---")
     httpx_args = ["-l", target_file, "-silent", "-json"]
     alive_hosts = []
     
+
     async for output_line in orchestrator.execute_tool("httpx", httpx_args):
         try:
             data = json.loads(output_line)
@@ -112,8 +119,8 @@ async def main():
 
     print(f"\n--- Saved {len(alive_hosts)} ALIVE hosts. ---")
 
-   
-    # [3/4] KATANA: Crawl only the ALIVE 
+    
+    # [3/4] KATANA: Crawl only the ALIVE hosts
    
     print(f"\n--- [3/4] Crawling {len(alive_hosts)} ALIVE hosts ---")
     katana_args = [
@@ -139,7 +146,7 @@ async def main():
                 if target_domain not in endpoint:
                     continue
                 
-                # Rule 2: Clean parameters out to check the base extension safely
+                # Rule 2: Clean parameters out to check the base
                 base_url = endpoint.split('?')[0].lower()
                 if base_url.endswith(ignored_extensions):
                     continue
@@ -159,20 +166,20 @@ async def main():
             
     print(f"\n--- Phase 3 Complete. Saved {len(unique_endpoints)} clean endpoints. ---")
 
-    
+   
     # [4/4] NUCLEI: Lightning Fast Scan on ALIVE roots
-    
+ 
     print(f"\n--- [4/4] Starting Vulnerability Scan with Nuclei ---")
 
     db = DatabaseManager()
     scan_id = db.start_scan(target_domain)
 
-    # EXTREME SPEED FLAGS ADDED 
+    # EXTREME SPEED FLAGS ADDED (-bs 100, -rl 500, scanning alive_hosts.txt)
     nuclei_args = [
         "-list", alive_file,
         "-tags", "tech,exposure,misconfig",
         "-c", "100",
-        "-bs", "100",             
+        "-bs", "100",            
         "-rl", "500",             
         "-timeout", "4",
         "-retries", "0",
@@ -190,11 +197,13 @@ async def main():
             # Extract details
             vuln_id = vuln_data.get("template-id", "unknown")
             vuln_name = vuln_data.get("info", {}).get("name", "Unknown Vulnerability")
-            severity = vuln_data.get("info", {}).get("severity", "info").upper()
+            severity = vuln_data.get
+            ("info", {}).get("severity", "info").upper()
             matched_url = vuln_data.get("matched-at", "unknown url")
 
             # save at sqlite db
-            db.save_vulnerability(scan_id, vuln_id, vuln_name, severity, matched_url)
+            db.save_vulnerability(scan_id, vuln_id, 
+            vuln_name, severity, matched_url)
             vuln_count += 1
 
             print(f"[{severity}] Saved to DB: {vuln_name} -> {matched_url}")
@@ -204,7 +213,9 @@ async def main():
     # Mark scan as finished in the DB
     db.complete_scan(scan_id)
 
+
     print(f"\n[+] Full pipeline finished! Saved {vuln_count} findings to scanner.db.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
