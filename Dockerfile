@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-Run apt-get update && \
+RUN command apt-get update && \
     apt-get install -y golang git wget unzip && \
     rm -rf /var/lib/apt/lists/*
 
@@ -26,14 +26,14 @@ Run apt-get update && \
 
     # install python dependencies
 
-    Run pip install --no-cache-dir flask 
+    RUN command pip install --no-cache-dir flask 
 
     EXPOSE 5000
 
     # tell to run web sever 
 
     CMD ["python", "app.py"]
-    
+
 
 
 
