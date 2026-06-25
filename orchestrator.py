@@ -2,6 +2,8 @@ import asyncio
 import json
 import shutil
 import sys
+import os
+import uuid
 from database import DatabaseManager
 
 class ScanOrchestrator:
@@ -30,6 +32,7 @@ class ScanOrchestrator:
         Includes an increased buffer limit to handle massive minified JS/JSON outputs.
         """
         binary_path = self.binaries.get(tool_name)
+
         command = [binary_path] + arguments
         
         print(f"[*] Launching: {' '.join(command)}")
@@ -42,6 +45,7 @@ class ScanOrchestrator:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
             limit=LARGE_LIMIT # <--- THIS FIXES THE CRASH
+
         )
 
         while True:
@@ -57,21 +61,28 @@ class ScanOrchestrator:
 async def main():
     orchestrator = ScanOrchestrator()
     
-    if len(sys.argv) < 2:
-        print("[-] Usage: python " 
-              
-        "orchestrator.py <domain>")
+    
+    if len(sys.argv) < 3:
+        print("[-] Usage: python orchestrator.py <domain> <session_id>")
         sys.exit(1)
         
     target_domain = sys.argv[1]  
+    session_id = sys.argv[2]
     
-  
-    # [1/4] SUBFINDER: Find raw DNS subdomains
+    # Create an isolated workspace directory so simultaneous scans don't overwrite files
+    workspace = f"scans_{uuid.uuid4().hex[:8]}"
+    os.makedirs(workspace, exist_ok=True)
 
     
+    target_file = f"{workspace}/temp_subdomains.txt"
+    alive_file = f"{workspace}/alive_hosts.txt"
+    output_file = f"{workspace}/crawled_endpoints.txt"
+    
+   
+    # [1/4] SUBFINDER: Find raw DNS subdomains
+    
     print(f"\n--- [1/4] Starting Passive Recon on {target_domain} ---")
-    subfinder_args = ["-d", 
-                      target_domain, "-silent", "-json"]
+    subfinder_args = ["-d", target_domain, "-silent", "-json"]
     raw_subdomains = []
     
     async for output_line in orchestrator.execute_tool("subfinder", subfinder_args):
@@ -87,14 +98,14 @@ async def main():
         print("[-] No subdomains found. Halting pipeline.")
         return
 
-    target_file = "temp_subdomains.txt"
     with open(target_file, "w") as f:
         for sub in raw_subdomains:
+
             f.write(f"{sub}\n")
             
     print(f"\n--- Saved {len(raw_subdomains)} raw hosts. ---")
 
-  
+    
     # [2/4] HTTPX: The Speed Optimizer (Filter out dead hosts)
     
     print(f"\n--- [2/4] Filtering {len(raw_subdomains)} domains for ALIVE web servers ---")
@@ -112,16 +123,17 @@ async def main():
         except json.JSONDecodeError:
             pass
 
-    alive_file = "alive_hosts.txt"
     with open(alive_file, "w") as f:
         for host in alive_hosts:
             f.write(f"{host}\n")
+
+
 
     print(f"\n--- Saved {len(alive_hosts)} ALIVE hosts. ---")
 
     
     # [3/4] KATANA: Crawl only the ALIVE hosts
-   
+    
     print(f"\n--- [3/4] Crawling {len(alive_hosts)} ALIVE hosts ---")
     katana_args = [
         "-list", alive_file, 
@@ -132,6 +144,7 @@ async def main():
         "-c", "200",
         "-jsonl"
     ]
+
         
     unique_endpoints = set()
     ignored_extensions = ('.js', '.css', '.png', '.jpg', '.jpeg', '.svg', '.gif', '.woff', '.woff2', '.ico')
@@ -141,6 +154,7 @@ async def main():
             data = json.loads(output_line)
             endpoint = data.get('request', {}).get('endpoint') or data.get('url')
             
+
             if endpoint:
                 # Rule 1: Ensure it's strictly in-scope
                 if target_domain not in endpoint:
@@ -159,22 +173,25 @@ async def main():
         except json.JSONDecodeError:
             pass
 
-    output_file = "crawled_endpoints.txt"
     with open(output_file, "w") as f:
         for url in unique_endpoints:
+
             f.write(f"{url}\n")
             
     print(f"\n--- Phase 3 Complete. Saved {len(unique_endpoints)} clean endpoints. ---")
 
    
     # [4/4] NUCLEI: Lightning Fast Scan on ALIVE roots
- 
+    
     print(f"\n--- [4/4] Starting Vulnerability Scan with Nuclei ---")
 
     db = DatabaseManager()
-    scan_id = db.start_scan(target_domain)
+    
+    # IMPORTANT: Start scan using both domain and user's session_id
+    scan_id = db.start_scan(target_domain, session_id)
 
-    # EXTREME SPEED FLAGS ADDED (-bs 100, -rl 500, scanning alive_hosts.txt)
+
+    
     nuclei_args = [
         "-list", alive_file,
         "-tags", "tech,exposure,misconfig",
@@ -197,22 +214,21 @@ async def main():
             # Extract details
             vuln_id = vuln_data.get("template-id", "unknown")
             vuln_name = vuln_data.get("info", {}).get("name", "Unknown Vulnerability")
-            severity = vuln_data.get
-            ("info", {}).get("severity", "info").upper()
+            severity = vuln_data.get("info", {}).get("severity", "info").upper()
             matched_url = vuln_data.get("matched-at", "unknown url")
 
             # save at sqlite db
-            db.save_vulnerability(scan_id, vuln_id, 
-            vuln_name, severity, matched_url)
+            db.save_vulnerability(scan_id, vuln_id, vuln_name, severity, matched_url)
             vuln_count += 1
+
 
             print(f"[{severity}] Saved to DB: {vuln_name} -> {matched_url}")
         except json.JSONDecodeError:
             pass
 
-    # Mark scan as finished in the DB
+   
     db.complete_scan(scan_id)
-
+    
 
     print(f"\n[+] Full pipeline finished! Saved {vuln_count} findings to scanner.db.")
 

@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scanner Dashboard</title>
+    
+    <!-- NEW: Auto-refresh the page every 10 seconds ONLY if there is an active scan -->
+    {% if active_scans %}
+    <meta http-equiv="refresh" content="10">
+    {% endif %}
+
     <!-- Import Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -30,14 +36,53 @@
                 <h1 class="text-3xl font-bold text-white tracking-tight">Vulnerability Dashboard</h1>
                 <p class="text-slate-400 mt-1">Real-time threat analysis and attack surface monitoring.</p>
             </div>
-            <div class="animate-pulse bg-green-500/20 text-green-400 px-4 py-2 rounded-full text-sm font-semibold border border-green-500/30">
-                ● System Online
+            <div class="flex items-center gap-3">
+                {% if active_scans %}
+                <div class="animate-pulse bg-blue-500/20 text-blue-400 px-4 py-2 rounded-full text-sm font-semibold border border-blue-500/30">
+                    Engine Active
+                </div>
+                {% else %}
+                <div class="bg-green-500/20 text-green-400 px-4 py-2 rounded-full text-sm font-semibold border border-green-500/30">
+                    System Idle
+                </div>
+                {% endif %}
             </div>
         </header>
 
-        <!-- NEW: Target Input Form -->
+        <!-- NEW: Active Scans Component -->
+        {% if active_scans %}
+        <div class="mb-10 space-y-4">
+            <h2 class="text-xl font-bold text-white">Active Scans in Progress</h2>
+            {% for scan in active_scans %}
+            <div class="bg-blue-900/10 border border-blue-500/30 p-5 rounded-xl shadow-lg flex items-center justify-between">
+                <div class="flex items-center">
+                    <!-- Spinning Loader -->
+                    <svg class="animate-spin -ml-1 mr-4 h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <div>
+                        <p class="text-blue-400 font-bold text-lg">Scanning: {{ scan['domain'] }}</p>
+                        <p class="text-sm text-blue-400/70 mt-1">The engine is currently orchestrating the pipeline. This page will auto-refresh every 10 seconds.</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">Started At</span><br>
+                    <span class="text-sm text-slate-300">{{ scan['start_time'].split('.')[0] }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Target Input Form -->
         <div class="bg-card border border-slate-700 p-6 rounded-xl shadow-lg mb-10">
-            <form action="/scan" method="POST" class="flex gap-4">
+            <form action="/scan" method="POST" class="flex gap-4" onsubmit="
+                const btn = this.querySelector('button');
+                btn.innerHTML = 'Starting...';
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.disabled = true;
+            ">
                 <input type="text" name="target" placeholder="Enter target domain (e.g., example.com)" 
                        class="flex-1 bg-dark border border-slate-600 rounded-lg px-5 py-4 text-white focus:outline-none focus:border-blue-500 shadow-inner" required>
                 <button type="submit" 
@@ -85,7 +130,7 @@
         <!-- Vulnerabilities Data Table -->
         <div class="bg-card rounded-xl shadow-2xl border border-slate-700 overflow-hidden">
             <div class="p-6 border-b border-slate-700 flex justify-between items-center">
-                <h2 class="text-xl font-bold text-white">Discovered Endpoints & Exposures</h2>
+                <h2 class="text-xl font-bold text-white">Your Private Findings</h2>
                 <span class="text-sm text-slate-400">Total Findings: {{ vulns|length }}</span>
             </div>
             
@@ -126,7 +171,7 @@
                         {% else %}
                         <tr>
                             <td colspan="5" class="px-6 py-12 text-center text-slate-500 italic">
-                                No vulnerabilities found in the database. Run the scanner!
+                                No vulnerabilities found. Enter a domain and launch a scan!
                             </td>
                         </tr>
                         {% endfor %}
