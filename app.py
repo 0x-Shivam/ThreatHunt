@@ -26,7 +26,7 @@ def index():
 
     conn = get_db_connection()
     
-    # 1. NEW: Fetch any scans that are currently RUNNING for this user
+    
     active_scans = conn.execute('''
         SELECT t.domain, s.start_time 
         FROM Scans s
@@ -35,7 +35,7 @@ def index():
         ORDER BY s.start_time DESC
     ''', (session['uid'],)).fetchall()
     
-    # 2. Fetch ONLY vulnerabilities that belong to this specific user's session
+    # Fetch ONLY vulnerabilities that belong that specific user 
     vulns = conn.execute('''
         SELECT v.severity, v.name, v.url, v.discovered_at, t.domain
         FROM Vulnerabilities v
@@ -62,7 +62,7 @@ def index():
 
     conn.close()
     
-    # Render the HTML template and pass the data (including active_scans) to it
+    # Render the HTML template and pass the active_scans so the UI can auto-refresh
     return render_template('index.html', vulns=vulns, stats=stats, active_scans=active_scans)
 
 @app.route('/scan', methods=['POST'])
@@ -77,7 +77,6 @@ def start_scan():
         print(f"[*] UI Triggered Scan for: {target} by User {session['uid'][:8]}")
         subprocess.Popen(['python', 'orchestrator.py', target, session['uid']])
         
-    # Redirect back to the dashboard (no more manual URL arguments needed!)
     return redirect(url_for('index'))
 
 if __name__ == '__main__':

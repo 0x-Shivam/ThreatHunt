@@ -76,21 +76,35 @@
         {% endif %}
 
         <!-- Target Input Form -->
-        <div class="bg-card border border-slate-700 p-6 rounded-xl shadow-lg mb-10">
-            <form action="/scan" method="POST" class="flex gap-4" onsubmit="
-                const btn = this.querySelector('button');
-                btn.innerHTML = 'Starting...';
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
-                btn.disabled = true;
-            ">
-                <input type="text" name="target" placeholder="Enter target domain (e.g., example.com)" 
-                       class="flex-1 bg-dark border border-slate-600 rounded-lg px-5 py-4 text-white focus:outline-none focus:border-blue-500 shadow-inner" required>
-                <button type="submit" 
-                        class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded-lg transition-colors shadow-lg shadow-blue-500/20">
-                    Launch Scan
-                </button>
-            </form>
+    <div class="bg-card border border-slate-700 p-6 rounded-xl shadow-lg mb-10">
+    <form action="/scan" method="POST" class="flex gap-4" onsubmit="
+        const btn = this.querySelector('button');
+        btn.innerHTML = 'Starting...';
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        btn.disabled = true;
+        // Instantly show the pop-up message below
+        document.getElementById('scan-popup').classList.remove('hidden');
+    ">
+        <input type="text" name="target" placeholder="Enter target domain (e.g., example.com)" 
+               class="flex-1 bg-dark border border-slate-600 rounded-lg px-5 py-4 text-white focus:outline-none focus:border-blue-500 shadow-inner" required>
+        <button type="submit" 
+                class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded-lg transition-colors shadow-lg shadow-blue-500/20">
+            Launch Scan
+        </button>
+    </form>
+
+    <!-- Instant Pop-up message (Hidden by default, revealed on submit) -->
+    <div id="scan-popup" class="hidden mt-6 bg-blue-500/10 border border-blue-500/50 p-5 rounded-xl shadow-lg flex items-center">
+        <svg class="animate-spin -ml-1 mr-4 h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <div>
+            <p class="text-blue-400 font-bold text-lg">Scan Started!</p>
+            <p class="text-sm text-blue-400/80 mt-1">Please wait for the results... The page will automatically refresh soon, or you can manually refresh the page.</p>
         </div>
+    </div>
+</div>  
 
         <!-- Stats Row -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
