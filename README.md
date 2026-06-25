@@ -9,7 +9,7 @@ A fast and automated web security ool that finds website subdomain, endpoints an
 
 * To wire up fours tool in pipe  line
 * Used to solve Error and adding comment 
-* Ai help me to finding best depolying option(due to my script is installing thrird party tool whcih is not supported by vercel,netlify becz these are serverless i choosed Railway by using docker i can host my appp i will get live url also.)
+* Ai help me to finding best depolying option(due to my script is installing thrird party tool which is not supported by vercel,netlify becz these are serverless i choosed Railway by using docker i can host my app i will get live url also.)
 
 
 # Technology Stack
