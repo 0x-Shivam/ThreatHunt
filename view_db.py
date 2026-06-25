@@ -17,7 +17,7 @@ def check_db():
             
         # 2. Check the Scans Table
         print("\n--- SCANS TABLE ---")
-        cursor.ex:Iecute("SELECT * FROM Scans")
+        cursor.exIecute("SELECT * FROM Scans")
         (scans) = cursor.fetchall()
         for s in scans:
             print(f"Scan ID: {s[0]} | Target ID: {s[1]} | Status: {s[3]} | c")
